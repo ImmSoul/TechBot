@@ -5,6 +5,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,9 +13,34 @@ public class Bot extends TelegramLongPollingBot {
     private String name = "TechnicsSS_bot";
     private String botToken = "5402567174:AAHcNymnlIrUUJfNXOQjz_8MTaXVEf71BmM";
 
-    Set<String> usersId = new HashSet<>();
+    private Set<User> users = new HashSet<>();
 
+    public void writeUsersList() throws IOException {
+        try (FileOutputStream fileOutputStream = new FileOutputStream(new File("src/main/resources/UsersList"))) {
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+            objectOutputStream.writeObject(users);
+            System.out.println("Запись успешна завершена");
 
+        }
+    }
+
+    public void getUsers() {
+        try (FileInputStream fileInputStream = new FileInputStream(new File("src/main/resources/UsersList"))) {
+            ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+            while (objectInputStream.available() > 0) {
+                users.add((User) objectInputStream.readObject());
+            }
+        } catch (FileNotFoundException e) {
+           e.printStackTrace();
+        } catch (EOFException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
     @Override
@@ -31,49 +57,62 @@ public class Bot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
 
         String id = update.getMessage().getChatId().toString();
-        if (!usersId.contains(id)) {
 
-            usersId.add(id);
+        User user = new User(id);
+        if (!users.contains(user)) {
+
+
+            users.add(user);
             SendMessage autoryMessage = new SendMessage(id, BotDialogs.START_DIALOG.getDialog());
-            User user = new User(id);
+
 
             try {
                 execute(autoryMessage);
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
 
-            autoryMessage.setText(BotDialogs.START_NAME.getDialog());
+            SendMessage messageName = new SendMessage(id, BotDialogs.START_NAME.getDialog());
+
             try {
-                execute(autoryMessage);
+                execute(messageName);
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }
+
+        } else if (!user.hasName) {
 
             user.setName(update.getMessage().toString());
-            System.out.println("Added new name " + user.getName().toString());
 
+            SendMessage messageName = new SendMessage(id, BotDialogs.START_FILIAL.getDialog());
             try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            autoryMessage.setText(BotDialogs.START_FILIAL.getDialog());
-            try {
-                execute(autoryMessage);
+                execute(messageName);
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }
+            System.out.println("Добавлено имя");
+        } else if (!user.hasFilial) {
+            user.setFilial(update.getMessage().toString());
 
-            user.setName(update.getMessage().toString());
-            System.out.println("Added new FILIAL " + user.getName().toString());
-
+            try {
+                writeUsersList();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                writeUsersList();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Добавлен филал");
+        }
+        else {
+            SendMessage message = new SendMessage(id, "Готовченко");
+            try {
+                execute(message);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
         }
 
 //        SendMessage startMessage = new SendMessage(id, "Выбери тему");
