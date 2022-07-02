@@ -6,6 +6,12 @@ public class User {
     private String chatId;
     private String name;
 
+    private String filial;
+
+    public void setFilial(String filial) {
+        this.filial = filial;
+    }
+
     public User(String chatId) {
         this.chatId = chatId;
     }
@@ -22,16 +28,5 @@ public class User {
         return chatId;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return chatId.equals(user.chatId) && Objects.equals(name, user.name);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(chatId, name);
-    }
 }
